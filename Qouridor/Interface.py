@@ -57,7 +57,6 @@ class Interface:
                         y_string = y_string.strip().upper()
                         x_string = x_string[-1]
                         y_string = y_string.strip()
-                        print(x_string, y_string)
                         if x_string not in Mappings.INPUT_MAPPINGS.keys() or y_string not in Mappings.INPUT_MAPPINGS.keys():
                             self.console.print("[bold red]Invalid input! Please try again.[/bold red]")
                         else:
@@ -75,14 +74,11 @@ class Interface:
 
                 elif value.upper().startswith("P"):
                     try:
-                        print(value)
                         x_string, y_string, dir_string = value[1:].split(",")
-                        print(x_string, y_string, dir_string)
-                        x_string = x_string[-1]
-                        y_string = y_string.strip()
-                        dir_string = dir_string.stirp()
+                        x_string = x_string[-1].upper()
+                        y_string = y_string.strip().upper()
+                        dir_string = dir_string.strip().upper()
 
-                        print(x_string, y_string, dir_string)
                         if x_string not in Mappings.INPUT_MAPPINGS.keys() or y_string not in Mappings.INPUT_MAPPINGS.keys():
                             self.console.print("[bold red]Invalid input! Please try again.[/bold red]")
                         else:

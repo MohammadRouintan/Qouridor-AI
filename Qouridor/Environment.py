@@ -7,7 +7,6 @@ from rich.table import Table
 import numpy as np
 from copy import copy
 import threading
-import copy
 from rich.console import Console
 from rich.table import Table
 from rich.style import Style
@@ -501,13 +500,11 @@ class Environment:
             return False, np.array([starting_pos[0], starting_pos[1], -1, -1, -1, -1])
         if self.is_wall_filled(third_piece_x, third_piece_y):
             return False, np.array([starting_pos[0], starting_pos[1], -1, -1, -1, -1])
-
         # check whether this wall blocks the opponent's last remaining path
         positions = np.array(
             [starting_pos[0], starting_pos[1], second_piece_x, second_piece_y, third_piece_x, third_piece_y])
 
         copy_state = copy(self)
-
         if copy_state.is_wall_blocking(positions, not self.player_one):
             return False, np.array([starting_pos[0], starting_pos[1], -1, -1, -1, -1])
 
