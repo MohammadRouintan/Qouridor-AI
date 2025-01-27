@@ -1,10 +1,20 @@
+import A_Star_Search
+from wall_direction import WallDirection
+from Color import Color
+
+from rich.console import Console
+from rich.table import Table
 import numpy as np
 from copy import copy
 import threading
+import copy
+from rich.console import Console
+from rich.table import Table
+from rich.style import Style
+from rich.text import Text
 
-import A_Star_Search
-from Color import Color
-from wall_direction import WallDirection
+
+console = Console()
 
 class Status:
     FILLED_BY_PLAYER_1 = 1
@@ -38,6 +48,19 @@ class Environment:
             self.board = np.zeros((289,), dtype=int)
             self.set_up_board()
 
+    def copy(self):
+        new_env = Environment(is_simulation=self.is_simulation, initialize=False)
+        new_env.player_one = self.player_one
+        new_env.rows = self.rows
+        new_env.cols = self.cols
+        new_env.player_one_walls_num = self.player_one_walls_num
+        new_env.player_two_walls_num = self.player_two_walls_num
+        new_env.player_one_pos = np.copy(self.player_one_pos)
+        new_env.player_two_pos = np.copy(self.player_two_pos)
+        new_env.board = np.copy(self.board)
+        new_env.lock = threading.Lock()
+        return new_env
+
     def set_up_board(self):
         for i in range(self.rows):
             for j in range(self.cols):
@@ -49,71 +72,57 @@ class Environment:
         self.board[self.player_one_pos[0] * self.cols + self.player_one_pos[1]] = Status.FILLED_BY_PLAYER_1
         self.board[self.player_two_pos[0] * self.cols + self.player_two_pos[1]] = Status.FILLED_BY_PLAYER_2
 
-    def copy(self):
-        game_state = copy(self)
-        game_state.player_one_pos = copy(self.player_one_pos)
-        game_state.player_two_pos = copy(self.player_two_pos)
-        game_state.board = copy(self.board)
-        return game_state
-
     def print_game_stats(self):
-        print(Color.GREEN + "{0:<15}".format("Player 1 walls") + Color.WHITE +
-              "|" + Color.RED + "{0:<15}".format(
-            "Player 2 walls") + Color.RESET,
-              end="|\n")
-        print("{0:-<15}|{1:-<15}".format("", ""), end="|\n")
-        print("{0:<15}|{1:<15}|".format(self.player_one_walls_num, self.player_two_walls_num))
+        table = Table(title="Game Stats", show_header=True, header_style="bold magenta")
+        table.add_column("Player 1 Walls", style="green", justify="center")
+        table.add_column("Player 2 Walls", style="red", justify="center")
+        table.add_row(str(self.player_one_walls_num), str(self.player_two_walls_num))
+        console.print(table)
 
     def print_board(self):
-
+        print("    ", end="")
         for i in range(0, len(Mappings.INPUT_LETTERS) - 3, 2):
-            end_num = i + 1
-            if i == 0:
-                print("      {0:<2} ".format(Mappings.INPUT_LETTERS[i]),
-                      end=Color.YELLOW + Mappings.INPUT_LETTERS[i + 1].lower() + Color.RESET)
-            elif end_num <= 12:
-
-                print("  {0:<2} ".format(Mappings.INPUT_LETTERS[i]),
-                      end=Color.YELLOW + Mappings.INPUT_LETTERS[i + 1].lower() + Color.RESET)
+            upper = Mappings.INPUT_LETTERS[i]
+            lower = Mappings.INPUT_LETTERS[i + 1].lower()
+            if i == len(Mappings.INPUT_LETTERS) - 3 - 2:
+                print(f"  {upper} ", end="")
             else:
-                print("  {0:<3}".format(Mappings.INPUT_LETTERS[i]), end=" ")
+                print(f"  {upper} " + Color.YELLOW + f"  {lower}" + Color.RESET + " ", end="")
         print()
 
         for i in range(self.rows):
+            label = Mappings.INPUT_LETTERS[i]
             if i % 2 == 0:
-                print("{0:>2}  ".format(Mappings.INPUT_LETTERS[i]), end="")
+                print(f"{label:>2}  ", end="")
             else:
-                print(Color.YELLOW + "{0:>2}  ".format(Mappings.INPUT_LETTERS[i].lower()) + Color.RESET, end="")
+                print(Color.YELLOW + f"{label.lower():>2}  " + Color.RESET, end="")
+
             for j in range(self.cols):
                 index = i * self.cols + j
-                if self.board[index] == Status.FREE_PLAYER:
-                    print("{0:4}".format(""), end="")
-                elif self.board[index] == Status.FILLED_BY_PLAYER_1:
-                    print(Color.GREEN + " {0:2} ".format("P1") + Color.RESET, end="")
-                elif self.board[index] == Status.FILLED_BY_PLAYER_2:
-                    print(Color.RED + " {0:2} ".format("P2") + Color.RESET, end="")
+                cell = self.board[index]
+
+                if cell == Status.FREE_PLAYER:
+                    print("     ", end="")
+                elif cell == Status.FILLED_BY_PLAYER_1:
+                    print(Color.GREEN + "  ♟  " + Color.RESET, end="")
+                elif cell == Status.FILLED_BY_PLAYER_2:
+                    print(Color.RED + "  ♟  " + Color.RESET, end="")
                 else:
                     if i % 2 == 1 and j % 2 == 0:
-                        if self.board[index] == Status.FREE_WALL:
-                            line = ""
-                            for k in range(5):
-                                line += "\u23AF"
-                            print(line, end="")
+                        if cell == Status.FREE_WALL:
+                            print("─────", end="")
                         else:
-                            line = ""
-                            for k in range(5):
-                                line += "\u2501"
-                            print(Color.YELLOW + line + Color.RESET, end="")
+                            print(Color.YELLOW + "━━━━━" + Color.RESET, end="")
                     elif i % 2 == 0 and j % 2 == 1:
-                        if self.board[index] == Status.FREE_WALL:
-                            print(" |", end="")
+                        if cell == Status.FREE_WALL:
+                            print(" │ ", end="")
                         else:
-                            print(Color.YELLOW + " \u2503" + Color.RESET, end="")
+                            print(Color.YELLOW + " ┃ " + Color.RESET, end="")
                     elif i % 2 == 1 and j % 2 == 1:
-                        if self.board[index] == Status.FREE_WALL:
-                            print("o", end="")
+                        if cell == Status.FREE_WALL:
+                            print("─┼─", end="")
                         else:
-                            print(Color.YELLOW + "O" + Color.RESET, end="")
+                            print(Color.YELLOW + "━╋━" + Color.RESET, end="")
             print()
 
     def is_pawn_filled(self, i, j):
